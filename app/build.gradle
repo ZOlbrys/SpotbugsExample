@@ -1,33 +1,38 @@
+import com.github.spotbugs.SpotBugsTask
+
 apply plugin: 'com.android.application'
 apply plugin: 'com.github.spotbugs'
 
-buildscript {
-    repositories {
-        maven { url 'https://plugins.gradle.org/m2/' }
+sourceSets {
+    // we define `main` sourceSet here, so SpotBugs Gradle Plugin generates `spotbugsMain` task
+    main {
+        java.srcDirs = ['src/main/java']
     }
+}
 
-    dependencies {
-        classpath 'gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.8'
-    }
+task compileJava(overwrite: true) {
+    dependsOn 'compileDebugJavaWithJavac'
+    group = "build"
 }
 
 spotbugs {
     toolVersion = '3.1.10'
+    ignoreFailures = true
+    effort = "max"
+    reportLevel = "high"
 }
 
-task spotbugs (type: com.github.spotbugs.SpotBugsTask) {
-    ignoreFailures = true
-    effort = 'max'
-    reportLevel = 'high'
-
+tasks.withType(SpotBugsTask) {
+    dependsOn 'assembleDebug'
+    group = "verification"
     classes = files("${project.buildDir}/intermediates/javac")
-    source = 'src'
-    classpath = files()
+    ignoreFailures = true
 
+    // configure automatically generated tasks
     reports {
         xml.enabled = false
         html.enabled = true
-        html.destination = file("$project.buildDir/outputs/spotbugs/spotbugs.html")
+        html.destination file("$project.buildDir/reports/spotbugs.html")
     }
 }
 
@@ -47,18 +52,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-}
-
-sourceSets {
-    // we define `main` sourceSet here, so SpotBugs Gradle Plugin generates `spotbugsMain` task
-    main {
-        java.srcDirs = ['src/main/java']
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
     }
-}
-
-task compileJava(overwrite: true) {
-    dependsOn 'compileDebugJavaWithJavac'
-    group = "build"
 }
 
 dependencies {
